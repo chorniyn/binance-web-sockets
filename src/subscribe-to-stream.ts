@@ -1,4 +1,4 @@
-import Binance, {WSTrade} from 'binance-api-node';
+import Binance, {Ticker, WSTrade} from 'binance-api-node';
 
 // Initialize the Binance client
 const client = Binance();
@@ -79,5 +79,15 @@ export function subscribeToBinanceUpdates<T>(callbackSetup: (callback: (value: T
     return new RateLimiter(iterable, frequencyInSeconds * 1000)
 }
 
-export const subscribeToTrades = (pairs: string | string[] = ['BTCUSDT'], frequencyInSeconds: number = 5) =>
+export const subscribeToTrades = ({pairs = ['BTCUSDT'], frequencyInSeconds = 5}: {
+    pairs?: string | string[],
+    frequencyInSeconds?: number
+} = {}) =>
     subscribeToBinanceUpdates<WSTrade>((callback) => client.ws.trades(pairs, callback), frequencyInSeconds)
+
+
+export const subscribeToFuturesTicker = ({pairs = ['BTCUSDT'], frequencyInSeconds = 5}: {
+    pairs?: string | string[],
+    frequencyInSeconds?: number
+} = {}) =>
+    subscribeToBinanceUpdates<Ticker>((callback) => client.ws.futuresTicker(pairs, callback), frequencyInSeconds)
