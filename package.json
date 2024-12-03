@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "binance-api-node": "^0.12.9",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "@fast-csv/format": "5.0.2"
   }
 }

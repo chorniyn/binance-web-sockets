@@ -1,10 +1,15 @@
 import {describe, it} from "vitest";
-import {subscribeToFuturesTicker, subscribeToOptionsTicker, subscribeToTrades} from "./subscribe-to-stream";
+import {
+    subscribeToFuturesTicker,
+    subscribeToOptionsTicker,
+    subscribeToTrades
+} from "./subscribe-to-stream";
 import fs from 'node:fs'
 import path from "node:path";
+import { format } from '@fast-csv/format';
 
 function prettyFormat(object: object) {
-    const transformed = Object.entries(object).reduce((acc, [key, value]) => {
+    return Object.entries(object).reduce((acc, [key, value]) => {
         if (key.toLowerCase().includes("time")) {
             return {
                 ...acc,
@@ -13,7 +18,6 @@ function prettyFormat(object: object) {
         }
         return {...acc, [key]: value}
     }, {} as any)
-    return JSON.stringify(transformed)
 }
 
 async function storingIterable<T extends object>(file: string, iterable: AsyncIterable<T>) {
@@ -22,13 +26,18 @@ async function storingIterable<T extends object>(file: string, iterable: AsyncIt
         await fs.promises.mkdir(reportsFolderPath)
     } catch (ignore) {
     }
-    //appends the file
-    const stream = await fs.promises.open(path.join(reportsFolderPath, file), 'a')
+    const stream = fs.createWriteStream(path.join(reportsFolderPath, file), { flags: 'w' })
+    const csvFormat = format({
+        headers: true,
+        objectMode: true
+    });
+    csvFormat.pipe(stream)
     for await (const value of iterable) {
         const pretty = prettyFormat(value)
         console.log(pretty)
-        await stream.write(pretty + '\n')
-        await stream.datasync()
+        if (!csvFormat.write(pretty)) {
+            await new Promise((resolve) => stream.once('drain', resolve))
+        }
     }
 }
 
@@ -37,12 +46,12 @@ describe("Binance Websockets", () => {
         const tomorrow = new Date()
         tomorrow.setDate(tomorrow.getDate() + 1)
         await Promise.all([
-            storingIterable('BTCUSDT_trades.txt', subscribeToTrades({pairs: ['BTCUSDT'], frequencyInSeconds: 3})),
-            storingIterable('BTCUSDT_futures_ticker.txt', subscribeToFuturesTicker({
+            storingIterable('BTCUSDT_trades.csv', subscribeToTrades({pairs: ['BTCUSDT'], frequencyInSeconds: 3})),
+            storingIterable('BTCUSDT_futures_ticker.csv', subscribeToFuturesTicker({
                 pairs: ['BTCUSDT'],
                 frequencyInSeconds: 3
             })),
-            storingIterable('BTC_options_ticker.txt', subscribeToOptionsTicker({
+            storingIterable('BTC_options_ticker.csv', subscribeToOptionsTicker({
                 asset: 'BTC',
                 frequencyInSeconds: 3,
                 localDate: tomorrow

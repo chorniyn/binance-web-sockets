@@ -138,13 +138,13 @@ export async function * subscribeToOptionsTicker({asset = 'BTC', localDate, freq
                 priceChangePercent: element["P"],// "P":"0.01",                 // price change percent
                 priceChange: element["p"],// "p":"20",                   // price change
                 volumeOfLastTrade: element['Q'],// "Q":"0.01",                 // volume of last completed trade(in contracts)
-                // "F":"27",                   // first trade ID
-                // "L":"48",                   // last trade ID
-                // "n":22,                     // number of trades
-                // "bo":"2012",                // The best buy price
-                // "ao":"2020",                // The best sell price
-                // "bq":"4.9",                 // The best buy quantity
-                // "aq":"0.03",                // The best sell quantity
+                firstTradeID: element['F'], // "F":"27",                   // first trade ID
+                lastTradeID: element['L'], // "L":"48",                   // last trade ID
+                numberOfTrades: element['n'], // "n":22,                     // number of trades
+                bestBuyPrice: element['bo'], // "bo":"2012",                // The best buy price
+                bestCellPrice: element['ao'],// "ao":"2020",                // The best sell price
+                bestBuyQuantity: element['bq'],// "bq":"4.9",                 // The best buy quantity
+                bestCellQuantity: element['aq'],// "aq":"0.03",                // The best sell quantity
                 buyImpliedVolatility: element['b'],// "b":"0.1202",               // BuyImplied volatility
                 sellImpliedVolatility: element['a'],// "a":"0.1318",               // SellImplied volatility
                 delta: element['d'],// "d":"0.98911",              // delta
@@ -152,11 +152,25 @@ export async function * subscribeToOptionsTicker({asset = 'BTC', localDate, freq
                 gamma: element['g'],// "g":"0.00004",              // gamma
                 vega: element['v'],// "v":"2.66584",              // vega
                 impliedVolatility: element['vo'],// "vo":"0.10001",             // Implied volatility
-                // "mp":"2003.5102",           // Mark price
-                // "hl":"2023.511",            // Buy Maximum price
-                // "ll":"1983.511",            // Sell Minimum price
+                markPrice: element['mp'],// "mp":"2003.5102",           // Mark price
+                buyMaxPrice: element['hl'],// "hl":"2023.511",            // Buy Maximum price
+                sellMinPrice: element['ll'],// "ll":"1983.511",            // Sell Minimum price
                 estimatedStrikePrice: element['eep']// "eep":"0"                   // Estimated strike price (
             }
+        }
+    }
+}
+
+export async function * subscribeToOptionsPair({frequencyInSeconds = 5}: {
+    frequencyInSeconds?: number
+}) {
+    const result = subscribeToBinanceUpdates<any[]>((callback) =>
+            nativeBinanceSetup('option_pair', callback),
+        frequencyInSeconds
+    )
+    for await (const item of result) {
+        for (const element of item) {
+            yield element
         }
     }
 }
