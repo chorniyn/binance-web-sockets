@@ -1,5 +1,5 @@
 import Binance, {Ticker, WSTrade} from 'binance-api-node';
-
+import WebSocket from 'ws';
 // Initialize the Binance client
 const client = Binance();
 
@@ -91,3 +91,72 @@ export const subscribeToFuturesTicker = ({pairs = ['BTCUSDT'], frequencyInSecond
     frequencyInSeconds?: number
 } = {}) =>
     subscribeToBinanceUpdates<Ticker>((callback) => client.ws.futuresTicker(pairs, callback), frequencyInSeconds)
+
+function nativeBinanceSetup(stream: string, callback: (value: any[]) => void) {
+    const binanceWSUrl = 'wss://nbstream.binance.com/eoptions/ws';
+
+    const ws = new WebSocket(`${binanceWSUrl}/${stream}`);
+
+    ws.on('open', () => {
+        console.info("WebSocket Opened", stream);
+    });
+
+    ws.on('message', (data: WebSocket.Data) => {
+        callback(JSON.parse(data.toString()));
+    });
+
+    ws.on('error', (error: Error) => {
+        console.error('WebSocket Error:', error, stream);
+    });
+}
+
+export async function * subscribeToOptionsTicker({asset = 'BTC', localDate, frequencyInSeconds = 5}: {
+    asset?: string,
+    localDate: Date,
+    frequencyInSeconds?: number
+}) {
+    const year = localDate.getFullYear();
+    const month = localDate.getMonth() + 1
+    const day = localDate.getDate()
+    const result = subscribeToBinanceUpdates<any[]>((callback) =>
+            nativeBinanceSetup(`${asset}@ticker@${year % 100}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`, callback),
+        frequencyInSeconds
+    )
+    for await (const item of result) {
+        for (const element of item) {
+            yield {
+                type: element.e, //:"24hrTicker",           // event type
+                eventTime: element["E"], //:1657706425200,          // event time
+                transactionTime: element["T"], //:1657706425220,          // transaction time
+                option: element["s"], //:"ETH-220930-1600-C",    // Option symbol
+                openingPrice: element["o"], //:"2000",                 // 24-hour opening price
+                highestPrice: element['h'],// "h":"2020",                 // Highest price
+                lowestPrice: element['l'],// "l":"2000",                 // Lowest price
+                latestPrice: element['c'],// "c":"2020",                 // latest price
+                tradingVolume: element['V'],// "V":"1.42",                 // Trading volume(in contracts)
+                tradeAmount: element["A"],// "A":"2841",                 // trade amount(in quote asset)
+                priceChangePercent: element["P"],// "P":"0.01",                 // price change percent
+                priceChange: element["p"],// "p":"20",                   // price change
+                volumeOfLastTrade: element['Q'],// "Q":"0.01",                 // volume of last completed trade(in contracts)
+                // "F":"27",                   // first trade ID
+                // "L":"48",                   // last trade ID
+                // "n":22,                     // number of trades
+                // "bo":"2012",                // The best buy price
+                // "ao":"2020",                // The best sell price
+                // "bq":"4.9",                 // The best buy quantity
+                // "aq":"0.03",                // The best sell quantity
+                buyImpliedVolatility: element['b'],// "b":"0.1202",               // BuyImplied volatility
+                sellImpliedVolatility: element['a'],// "a":"0.1318",               // SellImplied volatility
+                delta: element['d'],// "d":"0.98911",              // delta
+                theta: element['t'],// "t":"-0.16961",             // theta
+                gamma: element['g'],// "g":"0.00004",              // gamma
+                vega: element['v'],// "v":"2.66584",              // vega
+                impliedVolatility: element['vo'],// "vo":"0.10001",             // Implied volatility
+                // "mp":"2003.5102",           // Mark price
+                // "hl":"2023.511",            // Buy Maximum price
+                // "ll":"1983.511",            // Sell Minimum price
+                estimatedStrikePrice: element['eep']// "eep":"0"                   // Estimated strike price (
+            }
+        }
+    }
+}
