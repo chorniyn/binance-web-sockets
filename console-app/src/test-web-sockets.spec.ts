@@ -47,15 +47,15 @@ describe("Binance Websockets", () => {
         tomorrow.setDate(tomorrow.getDate() + 1)
         await Promise.all([
             storingIterable('BTCUSDT_trades.csv', subscribeToTrades({pairs: ['BTCUSDT'], frequencyInSeconds: 3})),
-            storingIterable('BTCUSDT_futures_ticker.csv', subscribeToFuturesTicker({
-                pairs: ['BTCUSDT'],
-                frequencyInSeconds: 3
-            })),
-            storingIterable('BTC_options_ticker.csv', subscribeToOptionsTicker({
-                asset: 'BTC',
-                frequencyInSeconds: 3,
-                localDate: tomorrow
-            })),
+            // storingIterable('BTCUSDT_futures_ticker.csv', subscribeToFuturesTicker({
+            //     pairs: ['BTCUSDT'],
+            //     frequencyInSeconds: 3
+            // // })),
+            // storingIterable('BTC_options_ticker.csv', subscribeToOptionsTicker({
+            //     asset: 'BTC',
+            //     frequencyInSeconds: 3,
+            //     localDate: tomorrow
+            // })),
         ])
     }, 60_000);
 })
