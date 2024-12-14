@@ -10,7 +10,8 @@ program
     .option("-h, --mongoHost <type>", "Mongo Host", "localhost")
     .option("-p, --mongoPort <type>", "Mongo Port", "27017")
     .option("-d, --database <type>", "Mongo database name", "binance-options")
-    .option("-c, --cron <type>", "CRON expression to request data", "55 * * * *");
+    .option("-c, --cron <type>", "CRON expression to request data", "55 * * * *")
+    .option("-a --assets <type>", "Assets to fetch", "BTC,ETH")
 
 program.parse(process.argv);
 
@@ -21,6 +22,7 @@ const mongoConnection: MongoConnection = {
     database: options.database
 }
 
+const assets = (options.assets as string).split(',').map((x) => x.trim())
 export function start(
     /**
      * default is 55th minute of every hour
@@ -32,7 +34,7 @@ export function start(
         cronExpression,
         ()=> {
             logger.info("Fetching the data")
-            requestAndStoreSnapshot({mongoConnection}).then(() => {
+            requestAndStoreSnapshot({mongoConnection, assets}).then(() => {
                 logger.info("Successfully fetched the data", {nextExecutionTime: getJob().nextDate()})
             }, (error) => {
                 logger.error("Failed to fetch the data", {error: error, nextExecutionTime: getJob().nextDate()})

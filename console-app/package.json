@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "start": "node -r esbuild-register src/app.ts -p 27017 -c \"* * * * *\""
+    "start": "node -r esbuild-register src/app.ts -p 27017 -c \"* * * * *\" -a \"BTC\""
   },
   "keywords": [],
   "author": "",
@@ -18,7 +18,8 @@
     "typescript": "^5.7.2",
     "vitest": "^2.1.8",
     "@types/node-cron": "3.0.11",
-    "esbuild-register": "3.6.0"
+    "esbuild-register": "3.6.0",
+    "pm2": "^5.4.3"
   },
   "dependencies": {
     "binance-api-node": "^0.12.9",
@@ -27,6 +28,7 @@
     "cron": "3.3.0",
     "winston": "3.17.0",
     "@date-fns/utc": "2.1.0",
+    "date-fns-tz": "^3.2.0",
     "mongoose": "8.8.4",
     "commander": "^12.1.0"
   }

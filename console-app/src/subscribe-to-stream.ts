@@ -2,6 +2,7 @@ import WebSocket from 'ws';
 import {logger} from "./logger";
 import {ObjectId} from "mongodb";
 import {OptionTickerItem, TradeIndexItem} from "./DomainModel";
+import {localDateToLocalString} from "./date-utils";
 
 interface Stoppable {
     stop(): void;
@@ -117,7 +118,7 @@ export function subscribeToOptions({asset = 'BTC', maturityDates}: {
                         const year = parseInt(dateString.substring(0, 2)) + 2000
                         const month = parseInt(dateString.substring(2, 4))
                         const day = parseInt(dateString.substring(4, 6))
-                        const maturityDate = year.toString() + '-' + month.toString().padStart(2, '0') + '-' + day.toString().padStart(2, '0')
+                        const maturityDate = localDateToLocalString(year, month, day)
                         const ticketItem: OptionTickerItem = {
                             _id: new ObjectId().toString(),
                             tradingPair: asset + '-USDT',
