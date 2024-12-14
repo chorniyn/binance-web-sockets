@@ -5,7 +5,8 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "start": "node -r esbuild-register src/app.ts -p 27017 -c \"* * * * *\" -a \"BTC\""
+    "start-local": "node -r esbuild-register src/app.ts -p 27017 -c \"* * * * *\" -a \"BTC\"",
+    "start": "node -r esbuild-register src/app.ts"
   },
   "keywords": [],
   "author": "",

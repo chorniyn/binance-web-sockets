@@ -43,7 +43,6 @@ function findClosestLastFridayOfMonth({startingFriday, nowUtc}:{startingFriday: 
     }
 }
 
-type EpochMillis = number
 function canUseDate({dateUtc, nowUtc}: {dateUtc: Date, nowUtc: Date}) {
     const dateYear = dateUtc.getFullYear()
     const nowYear = nowUtc.getFullYear()
