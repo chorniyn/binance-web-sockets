@@ -1,7 +1,7 @@
-import Binance, {Ticker, WSTrade} from 'binance-api-node';
 import WebSocket from 'ws';
-// Initialize the Binance client
-const client = Binance();
+import {logger} from "./logger";
+import {ObjectId} from "mongodb";
+import {OptionTickerItem, TradeIndexItem} from "./DomainModel";
 
 interface Stoppable {
     stop(): void;
@@ -48,57 +48,27 @@ class AsyncGeneratorFromCallback<T> implements Stoppable, AsyncIterable<T> {
     }
 }
 
-class RateLimiter<T> implements AsyncIterable<T> {
-    constructor(private iterable: AsyncIterable<T>, private frequency: number) {
-    }
-
-    private lastUpdate = Number.NEGATIVE_INFINITY;
-
-    [Symbol
-        .asyncIterator](): AsyncIterator<T, any, any> {
-        return this.generate()
-    }
-
-    private async* generate(): AsyncGenerator<T> {
-        for await (const value of this.iterable) {
-            const now = Date.now();
-            if (now - this.lastUpdate < this.frequency) {
-                // Skip the value if it's too soon
-                continue;
+export function subscribeToBinanceUpdates<T>(callbackSetup: (callback: (value: T) => void) => Stoppable) {
+    const iterable = new AsyncGeneratorFromCallback<T>();
+    const stoppable = callbackSetup((value) => iterable.callback(value));
+    return {
+        iterator: iterable.generate(),
+        stoppable: {
+            stop: () => {
+                stoppable.stop()
+                iterable.stop()
             }
-            this.lastUpdate = now;
-            yield value;
         }
     }
 }
 
-export function subscribeToBinanceUpdates<T>(callbackSetup: (callback: (value: T) => void) => void,
-                                             frequencyInSeconds: number = 5): AsyncIterable<T> {
-    const iterable = new AsyncGeneratorFromCallback<T>();
-    callbackSetup((value) => iterable.callback(value));
-    return new RateLimiter(iterable, frequencyInSeconds * 1000)
-}
-
-export const subscribeToTrades = ({pairs = ['BTCUSDT'], frequencyInSeconds = 5}: {
-    pairs?: string | string[],
-    frequencyInSeconds?: number
-} = {}) =>
-    subscribeToBinanceUpdates<WSTrade>((callback) => client.ws.trades(pairs, callback), frequencyInSeconds)
-
-
-export const subscribeToFuturesTicker = ({pairs = ['BTCUSDT'], frequencyInSeconds = 5}: {
-    pairs?: string | string[],
-    frequencyInSeconds?: number
-} = {}) =>
-    subscribeToBinanceUpdates<Ticker>((callback) => client.ws.futuresTicker(pairs, callback), frequencyInSeconds)
-
-function nativeBinanceSetup(stream: string, callback: (value: any[]) => void) {
+function nativeBinanceSetup(streams: string[], callback: (value: any[]) => void): Stoppable {
     const binanceWSUrl = 'wss://nbstream.binance.com/eoptions/ws';
 
-    const ws = new WebSocket(`${binanceWSUrl}/${stream}`);
+    const ws = new WebSocket(`${binanceWSUrl}/${streams.join('/')}`);
 
     ws.on('open', () => {
-        console.info("WebSocket Opened", stream);
+        logger.info("WebSocket Opened", {streams});
     });
 
     ws.on('message', (data: WebSocket.Data) => {
@@ -106,71 +76,98 @@ function nativeBinanceSetup(stream: string, callback: (value: any[]) => void) {
     });
 
     ws.on('error', (error: Error) => {
-        console.error('WebSocket Error:', error, stream);
+        logger.error('WebSocket Error', {error, streams});
     });
+    ws.on('close', (code) => {
+        logger.info('WebSocket Closed', {code, streams});
+    })
+    return {
+        stop: () => ws.close()
+    }
 }
 
-export async function * subscribeToOptionsTicker({asset = 'BTC', localDate, frequencyInSeconds = 5}: {
+
+
+function parseOptionalFloat(value: string | undefined): number | undefined {
+    if (value === undefined) return undefined;
+    return parseFloat(value);
+}
+export function subscribeToOptions({asset = 'BTC', maturityDates}: {
     asset?: string,
-    localDate: Date,
-    frequencyInSeconds?: number
+    maturityDates: Date[],
 }) {
-    const year = localDate.getFullYear();
-    const month = localDate.getMonth() + 1
-    const day = localDate.getDate()
-    const result = subscribeToBinanceUpdates<any[]>((callback) =>
-            nativeBinanceSetup(`${asset}@ticker@${year % 100}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`, callback),
-        frequencyInSeconds
+    const streams: string[] = [`${asset}USDT@index`]
+    for (const date of maturityDates) {
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1
+        const day = date.getDate()
+        streams.push(`${asset}@ticker@${year % 100}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`)
+    }
+    const {iterator, stoppable} = subscribeToBinanceUpdates<any[]>((callback) =>
+        nativeBinanceSetup(streams, callback),
     )
-    for await (const item of result) {
-        for (const element of item) {
-            yield {
-                type: element.e, //:"24hrTicker",           // event type
-                eventTime: element["E"], //:1657706425200,          // event time
-                transactionTime: element["T"], //:1657706425220,          // transaction time
-                option: element["s"], //:"ETH-220930-1600-C",    // Option symbol
-                openingPrice: element["o"], //:"2000",                 // 24-hour opening price
-                highestPrice: element['h'],// "h":"2020",                 // Highest price
-                lowestPrice: element['l'],// "l":"2000",                 // Lowest price
-                latestPrice: element['c'],// "c":"2020",                 // latest price
-                tradingVolume: element['V'],// "V":"1.42",                 // Trading volume(in contracts)
-                tradeAmount: element["A"],// "A":"2841",                 // trade amount(in quote asset)
-                priceChangePercent: element["P"],// "P":"0.01",                 // price change percent
-                priceChange: element["p"],// "p":"20",                   // price change
-                volumeOfLastTrade: element['Q'],// "Q":"0.01",                 // volume of last completed trade(in contracts)
-                firstTradeID: element['F'], // "F":"27",                   // first trade ID
-                lastTradeID: element['L'], // "L":"48",                   // last trade ID
-                numberOfTrades: element['n'], // "n":22,                     // number of trades
-                bestBuyPrice: element['bo'], // "bo":"2012",                // The best buy price
-                bestCellPrice: element['ao'],// "ao":"2020",                // The best sell price
-                bestBuyQuantity: element['bq'],// "bq":"4.9",                 // The best buy quantity
-                bestCellQuantity: element['aq'],// "aq":"0.03",                // The best sell quantity
-                buyImpliedVolatility: element['b'],// "b":"0.1202",               // BuyImplied volatility
-                sellImpliedVolatility: element['a'],// "a":"0.1318",               // SellImplied volatility
-                delta: element['d'],// "d":"0.98911",              // delta
-                theta: element['t'],// "t":"-0.16961",             // theta
-                gamma: element['g'],// "g":"0.00004",              // gamma
-                vega: element['v'],// "v":"2.66584",              // vega
-                impliedVolatility: element['vo'],// "vo":"0.10001",             // Implied volatility
-                markPrice: element['mp'],// "mp":"2003.5102",           // Mark price
-                buyMaxPrice: element['hl'],// "hl":"2023.511",            // Buy Maximum price
-                sellMinPrice: element['ll'],// "ll":"1983.511",            // Sell Minimum price
-                estimatedStrikePrice: element['eep']// "eep":"0"                   // Estimated strike price (
+    return {
+        iterator: async function* () {
+            for await (const item of iterator) {
+                if (Array.isArray(item)) {
+                    yield item.map((element, index) => {
+                        const split = (element["s"] as string).split('-')
+                        const dateString = split[1]
+                        const asset = split[0]
+                        const year = parseInt(dateString.substring(0, 2)) + 2000
+                        const month = parseInt(dateString.substring(2, 4))
+                        const day = parseInt(dateString.substring(4, 6))
+                        const maturityDate = year.toString() + '-' + month.toString().padStart(2, '0') + '-' + day.toString().padStart(2, '0')
+                        const ticketItem: OptionTickerItem = {
+                            _id: new ObjectId().toString(),
+                            tradingPair: asset + '-USDT',
+                            maturityDate,
+                            type: (split[3] as 'C' | 'P') === 'C' ? 'Call' : 'Put',
+                            strikePrice: parseFloat(split[2]),
+                            eventTime: parseInt(element["E"]), //:1657706425200,          // event time
+                            transactionTime: parseInt(element["T"]), //:1657706425220,          // transaction time
+                            openingPrice: parseOptionalFloat(element["o"]), //:"2000",                 // 24-hour opening price
+                            highestPrice: parseOptionalFloat(element['h']),// "h":"2020",                 // Highest price
+                            lowestPrice: parseOptionalFloat(element['l']),// "l":"2000",                 // Lowest price
+                            latestPrice: parseOptionalFloat(element['c']),// "c":"2020",                 // latest price
+                            tradingVolume: parseOptionalFloat(element['V']),// "V":"1.42",                 // Trading volume(in contracts)
+                            tradeAmount: parseOptionalFloat(element["A"]),// "A":"2841",                 // trade amount(in quote asset)
+                            priceChangePercent: parseOptionalFloat(element["P"]),// "P":"0.01",                 // price change percent
+                            priceChange: parseOptionalFloat(element["p"]),// "p":"20",                   // price change
+                            volumeOfLastTrade: parseOptionalFloat(element['Q']),// "Q":"0.01",                 // volume of last completed trade(in contracts)
+                            firstTradeID: element['F'], // "F":"27",                   // first trade ID
+                            lastTradeID: element['L'], // "L":"48",                   // last trade ID
+                            numberOfTrades: parseOptionalFloat(element['n']), // "n":22,                     // number of trades
+                            bestBuyPrice: parseOptionalFloat(element['bo']), // "bo":"2012",                // The best buy price
+                            bestCellPrice: parseOptionalFloat(element['ao']),// "ao":"2020",                // The best sell price
+                            bestBuyQuantity: parseOptionalFloat(element['bq']),// "bq":"4.9",                 // The best buy quantity
+                            bestCellQuantity: parseOptionalFloat(element['aq']),// "aq":"0.03",                // The best sell quantity
+                            buyImpliedVolatility: parseOptionalFloat(element['b']),// "b":"0.1202",               // BuyImplied volatility
+                            sellImpliedVolatility: parseOptionalFloat(element['a']),// "a":"0.1318",               // SellImplied volatility
+                            delta: parseOptionalFloat(element['d']),// "d":"0.98911",              // delta
+                            theta: parseOptionalFloat(element['t']),// "t":"-0.16961",             // theta
+                            gamma: parseOptionalFloat(element['g']),// "g":"0.00004",              // gamma
+                            vega: parseOptionalFloat(element['v']),// "v":"2.66584",              // vega
+                            impliedVolatility: parseOptionalFloat(element['vo']),// "vo":"0.10001",             // Implied volatility
+                            markPrice: parseOptionalFloat(element['mp']),// "mp":"2003.5102",           // Mark price
+                            buyMaxPrice: parseOptionalFloat(element['hl']),// "hl":"2023.511",            // Buy Maximum price
+                            sellMinPrice: parseOptionalFloat(element['ll']),// "ll":"1983.511",            // Sell Minimum price
+                            estimatedStrikePrice: parseOptionalFloat(element['eep'])// "eep":"0"                   // Estimated strike price (
+                        }
+                        return ticketItem
+                    })
+                } else {
+                    const tradeIndexItem: TradeIndexItem = {
+                        _id: new ObjectId().toString(),
+                        time: item['E'],
+                        tradingPair: asset + '-USDT',
+                        price: parseFloat(item['p']),
+                    }
+                    yield tradeIndexItem
+                }
             }
-        }
+        },
+        stop: () => stoppable.stop()
     }
-}
 
-export async function * subscribeToOptionsPair({frequencyInSeconds = 5}: {
-    frequencyInSeconds?: number
-}) {
-    const result = subscribeToBinanceUpdates<any[]>((callback) =>
-            nativeBinanceSetup('option_pair', callback),
-        frequencyInSeconds
-    )
-    for await (const item of result) {
-        for (const element of item) {
-            yield element
-        }
-    }
 }

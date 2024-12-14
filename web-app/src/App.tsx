@@ -1,6 +1,17 @@
 import './App.css'
 import {OptionRow, useBinanceOptionsStream} from "./useBinanceOptionsStream.ts";
-import {Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from "@mui/material";
+import {
+    Box,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableHead,
+    TableRow,
+    Typography
+} from "@mui/material";
+import React from "react";
 
 const callsColumns = 4
 const putColumns = 4
@@ -12,7 +23,7 @@ function App() {
         {data.data.map(({optionsData, maturityDate}, index) => <Box key={index} mt={2}>
                 <Typography variant={'h6'}>{maturityDate.toLocaleDateString()}</Typography>
                 <TableContainer component={Paper}>
-                    <Table sx={{minWidth: 650}} aria-label="simple table">
+                    <Table sx={{minWidth: 650, '& td': {paddingTop: '2px', paddingBottom: '2px'}}} aria-label="simple table">
                         <TableHead>
                             <TableRow>
                                 <TableCell colSpan={callsColumns}>Calls</TableCell>
