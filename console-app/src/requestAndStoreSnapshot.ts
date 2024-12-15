@@ -13,7 +13,7 @@ import {toZonedTime} from "date-fns-tz";
 import {UTCDate} from "@date-fns/utc";
 import {dateToLocalString} from "./date-utils";
 
-function findClosestFriday({since, nowUtc}:{since: Date, nowUtc: Date}) {
+function findClosestFriday({since, nowUtc}:{since: Date, nowUtc?: Date}) {
     /**
      * 0 is Sunday,
      * 5 is Friday
@@ -21,14 +21,14 @@ function findClosestFriday({since, nowUtc}:{since: Date, nowUtc: Date}) {
      */
     let result: Date = since
     while (true) {
-        if (getDay(result) === 5 && canUseDate({dateUtc: result, nowUtc})) {
+        if (getDay(result) === 5 && (!nowUtc || canUseDate({dateUtc: result, nowUtc}))) {
             return result
         }
         result = addDays(result, 1)
     }
 }
 
-function findClosestLastFridayOfMonth({startingFriday, nowUtc}:{startingFriday: Date, nowUtc: Date}) {
+function findClosestLastFridayOfMonth({startingFriday, nowUtc}:{startingFriday: Date, nowUtc?: Date}) {
     /**
      * 0 is Sunday,
      * 5 is Friday
@@ -36,7 +36,7 @@ function findClosestLastFridayOfMonth({startingFriday, nowUtc}:{startingFriday: 
      */
     let result: Date = startingFriday
     while (true) {
-        if (getMonth(result) != getMonth(addWeeks(result, 1)) && canUseDate({dateUtc: result, nowUtc})) {
+        if (getMonth(result) != getMonth(addWeeks(result, 1)) && (!nowUtc || canUseDate({dateUtc: result, nowUtc}))) {
             return result
         }
         result = addWeeks(result, 1)
@@ -68,8 +68,7 @@ function canUseDate({dateUtc, nowUtc}: {dateUtc: Date, nowUtc: Date}) {
 /**
  * Array of maturity dates to request. Format [yyyy-MM-dd]
  */
-export function resolveMaturityDates(): Date[] {
-    const nowEpochMillis = Date.now()
+export function resolveMaturityDates(nowEpochMillis: number = Date.now()): Date[] {
     const nowUtc = toZonedTime(nowEpochMillis, 'UTC')
     const todayThreshold = UTCDate.UTC(nowUtc.getFullYear(), nowUtc.getMonth(), nowUtc.getDate(), 7, 59, 0, 0)
     const includeToday = nowEpochMillis < todayThreshold;
@@ -105,12 +104,15 @@ export function resolveMaturityDates(): Date[] {
     let month = 2;
     while (quarterlyMaturityDates.length <= 4) {
         const startOfQuarter = toZonedTime(UTCDate.UTC(year, month, 1, 0, 0, 0, 0), 'UTC')
-        const closestFriday = findClosestFriday({since: startOfQuarter, nowUtc})
-        const closestLastFridayOfMonth = findClosestLastFridayOfMonth({startingFriday: closestFriday, nowUtc})
+        const closestFriday = findClosestFriday({since: startOfQuarter, nowUtc: undefined})
+        const closestLastFridayOfMonth = findClosestLastFridayOfMonth({startingFriday: closestFriday, nowUtc: undefined})
         if (canUseDate({dateUtc: closestLastFridayOfMonth, nowUtc})) {
             quarterlyMaturityDates.push(closestLastFridayOfMonth)
             year = closestLastFridayOfMonth.getFullYear()
             month = closestLastFridayOfMonth.getMonth()
+            if (quarterlyMaturityDates.length === 4) {
+                break
+            }
         }
 
         if (month === 11) {
