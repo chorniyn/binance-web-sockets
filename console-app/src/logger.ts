@@ -1,6 +1,8 @@
 // Custom log format to handle objects
 import {createLogger, format, transports} from "winston";
+import {programOptions} from "./program-args";
 
+const logFolder = programOptions.logPath
 const customFormat = format.printf(({ timestamp, level, message, ...meta }) => {
     let metaString = '';
 
@@ -11,7 +13,6 @@ const customFormat = format.printf(({ timestamp, level, message, ...meta }) => {
 
     return `${timestamp} - ${level.toUpperCase()}: ${message}${metaString}`;
 });
-
 // Create a Winston logger instance
 export const logger = createLogger({
     level: 'info',
@@ -22,6 +23,6 @@ export const logger = createLogger({
         customFormat
     ),
     transports: [
-        new transports.File({ filename: 'binance-store.log' })
+        new transports.File({ filename: 'binance-store.log', ...(logFolder ? {dirname: logFolder} : {}) })
     ],
 });

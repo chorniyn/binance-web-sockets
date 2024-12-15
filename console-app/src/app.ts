@@ -2,32 +2,21 @@ import {CronJob} from 'cron';
 import {connectToMongo, requestAndStoreSnapshot} from "./requestAndStoreSnapshot";
 import {logger} from "./logger";
 import {MongoConnection} from "./MongoConnection";
-import {Command} from "commander";
+import {programOptions} from "./program-args";
 
-const program = new Command();
 
-program
-    .option("-h, --mongoHost <type>", "Mongo Host", "localhost")
-    .option("-p, --mongoPort <type>", "Mongo Port", "27017")
-    .option("-d, --database <type>", "Mongo database name", "binance-options")
-    .option("-c, --cron <type>", "CRON expression to request data", "55 * * * *")
-    .option("-a --assets <type>", "Assets to fetch", "BTC,ETH")
-
-program.parse(process.argv);
-
-const options = program.opts();
 const mongoConnection: MongoConnection = {
-    host: options.mongoHost,
-    port: parseInt(options.mongoPort),
-    database: options.database
+    host: programOptions.mongoHost,
+    port: parseInt(programOptions.mongoPort),
+    database: programOptions.database
 }
 
-const assets = (options.assets as string).split(',').map((x) => x.trim())
+const assets = (programOptions.assets as string).split(',').map((x) => x.trim())
 export function start(
     /**
      * default is 55th minute of every hour
      */
-    cronExpression: string = options.cron
+    cronExpression: string = programOptions.cron
 ) {
     let getJob = () => job
     const job = new CronJob(
