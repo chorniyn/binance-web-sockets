@@ -1,5 +1,4 @@
 import {Command} from "commander";
-import exp from "node:constants";
 
 export const program = new Command();
 
@@ -9,7 +8,7 @@ program
     .option("-d, --database <string>", "Mongo database name", "binance-options")
     .option("-c, --cron <string>", "CRON expression to request data", "55 * * * *")
     .option("-a --assets <string, comma separated>", "Assets to fetch", "BTC,ETH")
-    .option("-l --logPath <strike>", "Log folder", "")
+    .option("-l --logPath <string>", "Log folder", "")
 
 program.parse(process.argv);
 
