@@ -111,7 +111,7 @@ describe("resolveMaturityDates", () => {
         ])
     })
 
-    it("should pass for Friday, 27 December 2024, 8:58:59 UTC", () => {
+    it("should pass for Friday, 27 December 2024, 7:58:59 UTC", () => {
         assertResult(1735286339000, [
             //3 daily
             '2024-12-27',
@@ -138,6 +138,86 @@ describe("resolveMaturityDates", () => {
         ])
     })
 
+    it("should pass for Friday, 27 December 2024, 8:58:59 UTC", () => {
+        assertResult(1735289939000, [
+            //3 daily
+            '2024-12-28',
+            '2024-12-29',
+            '2024-12-30',
+
+            //4 weekly skipping today's Friday
+            '2025-01-03',
+            '2025-01-10',
+            '2025-01-17',
+            '2025-01-24',
+
+            //4 monthly skipping today's Friday
+            '2025-01-31',
+            '2025-02-28',
+            '2025-03-28',
+            '2025-04-25',
+
+            //4 quarterly skipping today's Friday
+            '2025-03-28',
+            '2025-06-27',
+            '2025-09-26',
+            '2025-12-26'
+        ])
+    })
+
+    it("should pass for Friday, 31 December 2024, 7:58:59 UTC", () => {
+        assertResult(1735631939000, [
+            //3 daily
+            '2024-12-31',
+            '2025-01-01',
+            '2025-01-02',
+
+            //4 weekly
+            '2025-01-03',
+            '2025-01-10',
+            '2025-01-17',
+            '2025-01-24',
+
+            //4 monthly
+            '2025-01-31',
+            '2025-02-28',
+            '2025-03-28',
+            '2025-04-25',
+
+            //4 quarterly
+            '2025-03-28',
+            '2025-06-27',
+            '2025-09-26',
+            '2025-12-26'
+        ])
+    })
+
+    it("should pass for Friday, 31 December 2024, 8:58:59 UTC", () => {
+        assertResult(1735635539000, [
+            //3 daily
+            '2025-01-01',
+            '2025-01-02',
+            '2025-01-03',
+
+            //4 weekly
+            '2025-01-03',
+            '2025-01-10',
+            '2025-01-17',
+            '2025-01-24',
+
+            //4 monthly
+            '2025-01-31',
+            '2025-02-28',
+            '2025-03-28',
+            '2025-04-25',
+
+            //4 quarterly
+            '2025-03-28',
+            '2025-06-27',
+            '2025-09-26',
+            '2025-12-26'
+        ])
+    })
     function assertResult(epochMillis: number, expected: string[]) {
         const result = resolveMaturityDates(epochMillis)
         expect(result.map(date => dateToLocalString(date)).sort()).toStrictEqual(Array.from(new Set(expected)).sort())
