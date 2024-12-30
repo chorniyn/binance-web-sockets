@@ -32,7 +32,7 @@ describe("websocket-async-iterator", () => {
                     expect(typeof i.transactionTime).toBe('number')
                     expect(typeof i.bestBuyPrice).toBe('number')
                     expect(typeof i.bestBuyQuantity).toBe('number')
-                    expect(typeof i.bestCellPrice).toBe('number')
+                    expect(typeof i.bestSellPrice).toBe('number')
                     expect(typeof i.bestCellQuantity).toBe('number')
                     expect(typeof i.theta).toBe('number')
                     expect(typeof i.gamma).toBe('number')

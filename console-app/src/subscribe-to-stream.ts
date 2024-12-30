@@ -1,6 +1,5 @@
 import WebSocket from 'ws';
 import {logger} from "./logger";
-import {ObjectId} from "mongodb";
 import {OptionTickerItem, TradeIndexItem} from "./DomainModel";
 import {localDateToLocalString} from "./date-utils";
 
@@ -69,7 +68,7 @@ function nativeBinanceSetup(streams: string[], callback: (value: any[]) => void)
     const ws = new WebSocket(`${binanceWSUrl}/${streams.join('/')}`);
 
     ws.on('open', () => {
-        logger.info("WebSocket Opened", {streams});
+        logger.info("WebSocket Opened");
     });
 
     ws.on('message', (data: WebSocket.Data) => {
@@ -77,10 +76,10 @@ function nativeBinanceSetup(streams: string[], callback: (value: any[]) => void)
     });
 
     ws.on('error', (error: Error) => {
-        logger.error('WebSocket Error', {error, streams});
+        logger.error('WebSocket Error', {error});
     });
     ws.on('close', (code) => {
-        logger.info('WebSocket Closed', {code, streams});
+        logger.info('WebSocket Closed', {code});
     })
     return {
         stop: () => ws.close()
@@ -93,9 +92,10 @@ function parseOptionalFloat(value: string | undefined): number | undefined {
     if (value === undefined) return undefined;
     return parseFloat(value);
 }
-export function subscribeToOptions({asset = 'BTC', maturityDates}: {
+export function subscribeToOptions({asset = 'BTC', maturityDates, randomId}: {
     asset?: string,
     maturityDates: Date[],
+    randomId: () => string
 }) {
     const streams: string[] = [`${asset}USDT@index`]
     for (const date of maturityDates) {
@@ -120,7 +120,7 @@ export function subscribeToOptions({asset = 'BTC', maturityDates}: {
                         const day = parseInt(dateString.substring(4, 6))
                         const maturityDate = localDateToLocalString(year, month, day)
                         const ticketItem: OptionTickerItem = {
-                            _id: new ObjectId().toString(),
+                            _id: randomId(),
                             tradingPair: asset + '-USDT',
                             maturityDate,
                             type: (split[3] as 'C' | 'P') === 'C' ? 'Call' : 'Put',
@@ -140,7 +140,7 @@ export function subscribeToOptions({asset = 'BTC', maturityDates}: {
                             lastTradeID: element['L'], // "L":"48",                   // last trade ID
                             numberOfTrades: parseOptionalFloat(element['n']), // "n":22,                     // number of trades
                             bestBuyPrice: parseOptionalFloat(element['bo']), // "bo":"2012",                // The best buy price
-                            bestCellPrice: parseOptionalFloat(element['ao']),// "ao":"2020",                // The best sell price
+                            bestSellPrice: parseOptionalFloat(element['ao']),// "ao":"2020",                // The best sell price
                             bestBuyQuantity: parseOptionalFloat(element['bq']),// "bq":"4.9",                 // The best buy quantity
                             bestCellQuantity: parseOptionalFloat(element['aq']),// "aq":"0.03",                // The best sell quantity
                             buyImpliedVolatility: parseOptionalFloat(element['b']),// "b":"0.1202",               // BuyImplied volatility
@@ -159,7 +159,7 @@ export function subscribeToOptions({asset = 'BTC', maturityDates}: {
                     })
                 } else {
                     const tradeIndexItem: TradeIndexItem = {
-                        _id: new ObjectId().toString(),
+                        _id: randomId(),
                         time: item['E'],
                         tradingPair: asset + '-USDT',
                         price: parseFloat(item['p']),

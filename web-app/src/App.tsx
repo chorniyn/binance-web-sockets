@@ -82,7 +82,7 @@ const OptionsData = ({optionsData, indexPrice}: { optionsData?: OptionRow[], ind
                 <TableCell>{row.strikePrice}</TableCell>
                 <TableCell>{row.put?.markPrice}</TableCell>
                 <TableCell>
-                    {row.put?.bestCellPrice?.toFixed(1)}<br/>
+                    {row.put?.bestSellPrice?.toFixed(1)}<br/>
                     {((row.put?.sellImpliedVolatility ?? 0) * 100)?.toFixed(2)}%
                 </TableCell>
                 <TableCell>{row.put?.bestCellQuantity}</TableCell>

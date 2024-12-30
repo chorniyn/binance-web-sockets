@@ -1,17 +1,10 @@
 import {subscribeToOptions} from "./subscribe-to-stream";
-import mongoose from 'mongoose';
-import {MongoConnection} from "./MongoConnection";
 import {logger} from "./logger";
-import {optionItemSchema, OptionTickerItem, TradeIndexItem, tradeIndexSchema} from "./DomainModel";
-import {
-    addDays,
-    addWeeks,
-    getDay,
-    getMonth,
-} from "date-fns";
+import {addDays, addWeeks, getDay, getMonth,} from "date-fns";
 import {toZonedTime} from "date-fns-tz";
 import {UTCDate} from "@date-fns/utc";
 import {dateToLocalString} from "./date-utils";
+import {DataStore} from "./data-store";
 
 function findClosestFriday({since, nowUtc}:{since: Date, nowUtc?: Date}) {
     /**
@@ -139,41 +132,28 @@ export function resolveMaturityDates(nowEpochMillis: number = Date.now()): Date[
     }, [] as Date[])
 }
 
-export const connectToMongo = async (mongoConnection: MongoConnection) => {
-    logger.info('Connecting to MongoDB');
-    const connection = await mongoose.connect(`mongodb://${mongoConnection.host}:${mongoConnection.port}/${mongoConnection.database}`, {
-        appName: 'binance-options-scraper',
-        connectTimeoutMS: 3000,
-        socketTimeoutMS: 5000,
-        serverSelectionTimeoutMS: 3000
-    });
-    logger.info('MongoDB connected');
-    return connection
-};
-
-export async function requestAndStoreSnapshot({mongoConnection, assets}: { mongoConnection: MongoConnection, assets: string[] }) {
+export async function requestAndStoreSnapshot<D extends DataStore<any>>({dataStore, assets}: { dataStore: D, assets: string[] }) {
 
     const maturityDates = resolveMaturityDates()
     const maturityDatesStrings = maturityDates.map((m) => dateToLocalString(m))
-    const mongoConnectionPromise = connectToMongo(mongoConnection)
+    const dataStoreConnectionPromise = dataStore.connect()
+    logger.info("Fetching data for assets", {assets, maturityDates: maturityDates.map((m) => m.toDateString())})
     try {
-        const OptionItem = mongoConnectionPromise
-            .then((x) => x.model<OptionTickerItem>('OptionTicketItem', optionItemSchema));
-        const TradeIndex = mongoConnectionPromise
-            .then((x) => x.model<TradeIndexItem>('TradeIndex', tradeIndexSchema));
         const promiseResults = await Promise.allSettled(assets.map(async (asset) => {
-            logger.info("Fetching data for asset", {asset, maturityDates: maturityDates.map((m) => m.toDateString())})
             const {iterator, stop} = subscribeToOptions({
                 asset,
-                maturityDates
+                maturityDates,
+                randomId: dataStore.randomId
             })
             let isDone = false
             const timeoutHandle = setTimeout(() => {
                 isDone = true
                 stop()
-            }, 40_000)
+            }, 10_000)
             const maturityDatesReceived = new Set<string>()
             let indexPriceSaved = false
+            let optionsStored = 0
+            let indexPriceStored = 0
             try {
                 for await (const item of iterator()) {
                     if (Array.isArray(item)) {
@@ -183,27 +163,20 @@ export async function requestAndStoreSnapshot({mongoConnection, assets}: { mongo
                                 continue
                             }
                             maturityDatesReceived.add(maturityDate)
-                            logger.info("Storing options 24h ticker", {asset, maturityDate})
-                            const result = await (await OptionItem).bulkWrite(item.map((option) => ({
-                                insertOne: {
-                                    document: option
-                                }
-                            })));
-                            if (result.hasWriteErrors()) {
-                                logger.error("Batch write errors", {errors: result.getWriteErrors(), asset})
-                                throw Error("Error writing Option Ticker to mongo")
-                            }
+                            await dataStore.storeOptions24hTicker({asset, maturityDate, data: item}, dataStoreConnectionPromise)
+                            optionsStored += item.length
                         }
                     } else if (!indexPriceSaved) {
                         indexPriceSaved = true
-                        logger.info("Storing trade index", {asset})
-                        await (await TradeIndex).create(item)
+                        await dataStore.storeTradeIndex(item, dataStoreConnectionPromise)
+                        ++indexPriceStored
                     }
                     if (isDone || (indexPriceSaved && maturityDatesReceived.size === maturityDatesStrings.length)) {
                         break
                     }
                 }
             } finally {
+                logger.info("Res", {asset, options: optionsStored, indexPrice: indexPriceStored})
                 stop()
                 clearTimeout(timeoutHandle)
             }
@@ -215,7 +188,7 @@ export async function requestAndStoreSnapshot({mongoConnection, assets}: { mongo
         })
     } finally {
         try {
-            await (await mongoConnectionPromise).disconnect()
+            await dataStore.disconnect(await dataStoreConnectionPromise)
         } catch (ignore) {
         }
     }

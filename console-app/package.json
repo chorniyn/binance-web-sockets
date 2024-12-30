@@ -5,8 +5,9 @@
   "scripts": {
     "build": "tsc",
     "test": "vitest run",
-    "start-local": "node -r esbuild-register src/app.ts -p 27017 -c \"* * * * *\" -a \"BTC\"",
-    "start": "node -r esbuild-register src/app.ts"
+    "start-local": "node -r esbuild-register src/app.ts -p 27017 -c \"* * * * *\" -a \"BTC,ETH\"",
+    "start": "node -r esbuild-register src/app.ts",
+    "build-lambda": "node -r esbuild-register src/build-lambda.ts"
   },
   "keywords": [],
   "author": "",
@@ -15,22 +16,23 @@
   "devDependencies": {
     "@types/node": "^22.10.1",
     "@types/ws": "^8.5.13",
+    "@types/archiver": "6.0.3",
     "@vitest/ui": "^2.1.8",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8",
     "@types/node-cron": "3.0.11",
     "esbuild-register": "3.6.0",
-    "pm2": "^5.4.3"
+    "pm2": "^5.4.3",
+    "archiver": "7.0.1"
   },
   "dependencies": {
-    "binance-api-node": "^0.12.9",
     "ws": "^8.18.0",
-    "@fast-csv/format": "5.0.2",
     "cron": "3.3.0",
-    "winston": "3.17.0",
     "@date-fns/utc": "2.1.0",
     "date-fns-tz": "^3.2.0",
     "mongoose": "8.8.4",
-    "commander": "^12.1.0"
+    "commander": "^12.1.0",
+    "@aws-sdk/lib-dynamodb": "3.716.0",
+    "@aws-sdk/client-dynamodb": "3.716.0"
   }
 }

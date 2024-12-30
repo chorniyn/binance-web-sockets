@@ -196,7 +196,7 @@ export interface OptionTickerItem  {
     lastTradeID: number, // "L":"48",                   // last trade ID
     numberOfTrades: number, // "n":22,                     // number of trades
     bestBuyPrice: number, // "bo":"2012",                // The best buy price
-    bestCellPrice: number,// "ao":"2020",                // The best sell price
+    bestSellPrice: number,// "ao":"2020",                // The best sell price
     bestBuyQuantity: number,// "bq":"4.9",                 // The best buy quantity
     bestCellQuantity: number,// "aq":"0.03",                // The best sell quantity
     buyImpliedVolatility: number,// "b":"0.1202",               // BuyImplied volatility
@@ -265,7 +265,7 @@ export function subscribeToOptions({asset = 'BTC', localDates}: {
                             lastTradeID: element['L'] as number, // "L":"48",                   // last trade ID
                             numberOfTrades: element['n'] as number, // "n":22,                     // number of trades
                             bestBuyPrice: parseFloat(element['bo']) as number, // "bo":"2012",                // The best buy price
-                            bestCellPrice: parseFloat(element['ao']) as number,// "ao":"2020",                // The best sell price
+                            bestSellPrice: parseFloat(element['ao']) as number,// "ao":"2020",                // The best sell price
                             bestBuyQuantity: parseFloat(element['bq']) as number,// "bq":"4.9",                 // The best buy quantity
                             bestCellQuantity: parseFloat(element['aq']) as number,// "aq":"0.03",                // The best sell quantity
                             buyImpliedVolatility: parseFloat(element['b']) as number,// "b":"0.1202",               // BuyImplied volatility
