@@ -149,7 +149,7 @@ export async function requestAndStoreSnapshot<D extends DataStore<any>>({dataSto
             const timeoutHandle = setTimeout(() => {
                 isDone = true
                 stop()
-            }, 10_000)
+            }, 14_000)
             const maturityDatesReceived = new Set<string>()
             let indexPriceSaved = false
             let optionsStored = 0
