@@ -61,7 +61,8 @@ async function exportDynamoDBToCSV(): Promise<void> {
         csvStream.pipe(writeStream).on("finish", resolve).on("error", reject);
 
         let lastEvaluatedKey: Record<string, any> | undefined = undefined;
-        let index = 0;
+        let items = 0;
+        let indicator = 0;
         try {
             do {
                 const params: ScanCommandInput = {
@@ -77,8 +78,13 @@ async function exportDynamoDBToCSV(): Promise<void> {
                     for (const item of response.Items) {
                         csvStream.write(Object.keys(attributeMapping).map((key) => item[key] ?? null))
                     }
+                    items += response.Items.length;
+                    indicator = items;
                 }
-
+                if (indicator > 50_000) {
+                    console.log("Exported " + items + " items");
+                    indicator = 0;
+                }
                 lastEvaluatedKey = response.LastEvaluatedKey;
             } while (lastEvaluatedKey);
         } catch (error) {
