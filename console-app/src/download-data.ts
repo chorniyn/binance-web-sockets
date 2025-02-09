@@ -74,7 +74,6 @@ async function exportDynamoDBToCSV(): Promise<void> {
                 const response = await client.send(command);
 
                 if (response.Items) {
-                    console.log(`Writing ${response.Items.length} items to CSV...`);
                     for (const item of response.Items) {
                         csvStream.write(Object.keys(attributeMapping).map((key) => item[key] ?? null))
                     }
