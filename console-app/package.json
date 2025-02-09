@@ -7,7 +7,8 @@
     "test": "vitest run",
     "start-local": "node -r esbuild-register src/app.ts -p 27017 -c \"* * * * *\" -a \"BTC,ETH\"",
     "start": "node -r esbuild-register src/app.ts",
-    "build-lambda": "node -r esbuild-register src/build-lambda.ts"
+    "build-lambda": "node -r esbuild-register src/build-lambda.ts",
+    "download": "node -r esbuild-register src/download-data.ts"
   },
   "keywords": [],
   "author": "",
@@ -29,10 +30,12 @@
     "ws": "^8.18.0",
     "cron": "3.3.0",
     "@date-fns/utc": "2.1.0",
+    "fast-csv": "5.0.2",
     "date-fns-tz": "^3.2.0",
     "mongoose": "8.8.4",
     "commander": "^12.1.0",
     "@aws-sdk/lib-dynamodb": "3.716.0",
-    "@aws-sdk/client-dynamodb": "3.716.0"
+    "@aws-sdk/client-dynamodb": "3.716.0",
+    "@aws-sdk/": ""
   }
 }
