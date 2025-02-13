@@ -69,7 +69,7 @@ export class DynamodbDataStore implements DataStore<{}>{
                     eep: item.estimatedStrikePrice// "eep":"0"                   // Estimated strike price (
                 }
             }),
-            tableName: "binance-options",
+            tableName: "binance-options-2",
             operation: "store-options",
             dynamoDbClient: this.dynamodb
         })
