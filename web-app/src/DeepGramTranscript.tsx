@@ -1,4 +1,4 @@
-import {useCallback, useEffect, useState} from "react";
+import {useCallback, useEffect, useMemo, useState} from "react";
 import {useDropzone} from 'react-dropzone'
 import {Box, Button, Dialog, DialogContent, DialogTitle, Stack} from "@mui/material";
 
@@ -27,7 +27,7 @@ function extractSummary(json: Deepgram) {
     let summary = "";
     const summaryData = json.results.channels[0].alternatives[0].summaries;
 
-    summaryData.forEach((element, index) => {
+    summaryData?.forEach((element, index) => {
         summary += element.summary;
         if (index < summaryData.length - 1) {
             summary += "\n\n";
@@ -38,7 +38,7 @@ function extractSummary(json: Deepgram) {
 }
 
 function extractTopics(json: Deepgram) {
-    let topics: string[] = [];
+    const topics: string[] = [];
     const topicsData = json.results.channels[0].alternatives[0].topics;
 
     topicsData.forEach(element => {
@@ -62,19 +62,19 @@ function parseData(json: Deepgram) {
 
     let previousElementEnd = 0;
     let wordsInPara = 0;
-    let showDiarization = true;
+    const showDiarization = true;
 
     const wordsPerSpeker: Record<number, number> = {}
     wordData.forEach((element, index) => {
 
-        let currentWord = punctuatedWords[index];
+        const currentWord = punctuatedWords[index];
         wordsInPara++;
 
         // if there's a gap longer than half a second consider splitting into new para
 
         if (previousElementEnd !== 0 && (element.start - previousElementEnd) > significantGapInSeconds || wordsInPara > maxWordsInPara) {
-            let previousWord = punctuatedWords[index - 1];
-            let previousWordLastChar = previousWord.charAt(previousWord.length - 1);
+            const previousWord = punctuatedWords[index - 1];
+            const previousWordLastChar = previousWord.charAt(previousWord.length - 1);
             if (previousWordLastChar === "." || previousWordLastChar === "?" || previousWordLastChar === "!") {
                 hyperTranscript += "\n  </p>\n  <p>\n   ";
                 wordsInPara = 0;
@@ -83,7 +83,7 @@ function parseData(json: Deepgram) {
 
         // change of speaker or first word
         if ((showDiarization === true && index > 0 && element.speaker !== wordData[index - 1].speaker) || index === 0) {
-            let previousWord = punctuatedWords[index - 1];
+            const previousWord = punctuatedWords[index - 1];
             let previousWordLastChar = null;
 
             if (index > 0) {
@@ -138,6 +138,7 @@ export const DeepgramToHypertranscript = () => {
     });
 
     const [transcript, setTranscript] = useState<Deepgram>();
+    const summary = useMemo(() => transcript ? extractSummary(transcript) : undefined, [transcript])
 
     const onTranscriptDrop = useCallback((acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
@@ -182,15 +183,15 @@ export const DeepgramToHypertranscript = () => {
                            src={videoSrc} controls>
                         <track id="hyperplayer-vtt" label="English" kind="subtitles" srcLang="en" src=""/>
                     </video>
-                    {transcript && <Button onClick={() => setShowSummary(true)}>Show Summary</Button>}
+                    {(transcript && summary) && <Button onClick={() => setShowSummary(true)}>Show Summary</Button>}
                 </Box>
                 <Box flex={1}>
                     <DeepgramToHypertranscriptDisplay transcript={transcript}/>
                 </Box>
-                {transcript && <Dialog open={showSummary} onClose={() => setShowSummary(false)}>
+                {(transcript && summary) && <Dialog open={showSummary} onClose={() => setShowSummary(false)}>
                     <DialogTitle>Summary</DialogTitle>
                     <DialogContent>
-                        <pre style={{wordBreak: 'break-word', textWrap: 'auto'}}>{extractSummary(transcript)}</pre>
+                        <pre style={{wordBreak: 'break-word', textWrap: 'auto'}}>{summary}</pre>
                     </DialogContent>
                 </Dialog>}
             </Stack>
@@ -200,19 +201,19 @@ export const DeepgramToHypertranscript = () => {
 export const DeepgramToHypertranscriptDisplay = ({transcript}: { transcript?: Deepgram }) => {
     useEffect(() => {
         if (transcript) {
-            let minimizedMode = false;
-            let autoScroll = true;
-            let doubleClick = false;
-            let webMonetization = true;
-            let playOnClick = false;
-            new (window as any).HyperaudioLite("hypertranscript", "hyperplayer", minimizedMode, autoScroll, doubleClick, webMonetization, playOnClick);
+            const minimizedMode = false;
+            const autoScroll = true;
+            const doubleClick = false;
+            const webMonetization = true;
+            const playOnClick = false;
+            new (window as unknown as any).HyperaudioLite("hypertranscript", "hyperplayer", minimizedMode, autoScroll, doubleClick, webMonetization, playOnClick);
 
             // Override scroll parameters
             //ht1.setScrollParameters(<duration>, <delay>, <offset>, <container>);
 
             // this should create captions
             const c = (window as any).caption
-            let cap1 = c();
+            const cap1 = c();
             cap1.init("hypertranscript", "hyperplayer", '37', '21'); // transcript Id, player Id, max chars, min chars for caption line
         }
     }, [transcript])
