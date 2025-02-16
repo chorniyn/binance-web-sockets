@@ -156,30 +156,22 @@ export const DeepgramToHypertranscript = () => {
     });
     const [showSummary, setShowSummary] = useState(false);
     return (<div>
-            <Stack flexDirection={'row'} alignItems={'center'} justifyContent={'center'} gap={4}>
+            <Stack flexDirection={'row'} alignItems={'center'} justifyContent={'center'} gap={1}>
                 <Box flex={0}>
-                    <div style={{border: '2px solid black', width: 330, height: 100}}
+                    <div style={{border: `2px solid grey`, background: isDragActive? 'blueviolet' :'white', cursor: 'pointer', width: 700, height: 120, display: "flex", justifyContent: "center", alignItems: "center"}}
                          {...getRootProps()}
                     >
                         <input {...getInputProps()} />
-                        {isDragActive ? (
-                            <p className="text-gray-600">Drop the video here...</p>
-                        ) : (
-                            <p className="text-gray-600">Drag & Drop a video or click to upload</p>
-                        )}
+                        <p style={{fontSize: 20, fontWeight: 'bold', color: isDragActive ? 'white' : 'black' }}>Recording</p>
                     </div>
-                    <div style={{border: '2px solid black', width: 330, height: 100}}
+                    <div style={{border: `2px solid grey`, marginTop: 8, marginBottom: 8, background: transcriptProps.isDragActive? 'blueviolet' :'white', cursor: 'pointer', width: 700, height: 130, display: "flex", justifyContent: "center", alignItems: "center"}}
                          {...transcriptProps.getRootProps()}
                     >
                         <input {...transcriptProps.getInputProps()} />
-                        {transcriptProps.isDragActive ? (
-                            <p className="text-gray-600">Drop the transcript here...</p>
-                        ) : (
-                            <p className="text-gray-600">Drag & Drop a transcript or click to upload</p>
-                        )}
+                        <p style={{fontSize: 20, fontWeight: 'bold', color: transcriptProps.isDragActive ? 'white' : 'black' }}>Transcript</p>
                     </div>
                     <video id="hyperplayer" className="hyperaudio-player"
-                           style={{zIndex: 5000000, position: "relative", width: 400}}
+                           style={{zIndex: 5000000, position: "relative", width: 702}}
                            src={videoSrc} controls>
                         <track id="hyperplayer-vtt" label="English" kind="subtitles" srcLang="en" src=""/>
                     </video>

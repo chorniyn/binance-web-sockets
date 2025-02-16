@@ -1,0 +1,13 @@
+Ok, so now let's try to take a look how Deepgram works in the live mode. We have 6 demo recordings - 4 video files and 2 audio file. We'll feed these files to the DeepGram. If the demo API key that we use is not expired yet, we should get the results back. If it is expired, then we should still see how it worked before the demo.
+
+So let's upload the files. Once uploaded, we should see the messages that the transcription job has been scheduled.
+
+4a01 - the last phrase of the participant contains officer's text.
+
+So when a person A is speaking and then in the middle of that speech a person B inserts a short phrase, this short phrase is still often identified as the phrase of the person A.
+
+Now, you see that our tool has tagged the speakers as the Participant and the Officer. We should probably talk about it a bit.
+
+If the recording has 2 channels or we just have different recordings from each speaker, then we know who is who. But if we have a mono channel recording, then we need to do 2 AI jobs
+- the first job is the diarization job which identifies the speakers and assigns them some numbers like Speaker 1, Speaker 2. And this job is done by the Deepgram as well by the other tools that Andrey mentioned
+- but the second is to identify the roles of the Speaker 1 and the Speaker 2. In other words who is Participant and who is Officer. The UI tool that you now see makes this classification by just counting the words spoken by each speaker. And then the one whose speech was the longest is considered to be an Officer. Of course this can't work like that in Production and we will need to use some classification model to solve this problem.
