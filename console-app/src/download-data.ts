@@ -8,6 +8,7 @@ import {Command} from "commander";
 interface Options {
     accessKeyId: string,
     secretAccessKey: string,
+    table: string,
 }
 
 const program = new Command();
@@ -15,6 +16,7 @@ const program = new Command();
 program
     .option("-k, --accessKeyId <string>", "AWS Key ID", "")
     .option("-s, --secretAccessKey <string>", "AWS Secret Key", "")
+    .option("-t, --table <string>", "DynamoDB Table", "binance-options")
 
 program.parse(process.argv);
 
@@ -82,7 +84,7 @@ async function exportDynamoDBToCSV(): Promise<void> {
         try {
             do {
                 const params: ScanCommandInput = {
-                    TableName: "binance-options",
+                    TableName: options.table,
                     ExclusiveStartKey: lastEvaluatedKey,
                     Limit: 1000
                 };
