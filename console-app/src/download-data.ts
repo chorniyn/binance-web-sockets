@@ -3,12 +3,28 @@ import {DynamoDBDocumentClient, ScanCommand, ScanCommandInput} from "@aws-sdk/li
 import path from "node:path";
 import * as fs from "node:fs";
 import {format} from "fast-csv";
+import {Command} from "commander";
+
+interface Options {
+    accessKeyId: string,
+    secretAccessKey: string,
+}
+
+const program = new Command();
+
+program
+    .option("-k, --accessKeyId <string>", "AWS Key ID", "")
+    .option("-s, --secretAccessKey <string>", "AWS Secret Key", "")
+
+program.parse(process.argv);
+
+const options = program.opts<Options>();
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({
     region: "eu-west-2",
     credentials: {
-        accessKeyId: "",
-        secretAccessKey: ""
+        accessKeyId: options.accessKeyId,
+        secretAccessKey: options.secretAccessKey
     }
 }))
 
