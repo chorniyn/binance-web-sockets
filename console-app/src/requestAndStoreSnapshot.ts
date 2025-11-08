@@ -169,7 +169,8 @@ export async function requestAndStoreSnapshot<D extends DataStore<any>>({dataSto
         const tradesStorePromise = Promise.allSettled(assets.map(async (asset) => {
             const symbol = asset + "USDT"
             let fromId: number | undefined = undefined
-            for (let i = 0; i < 5; ++i) {
+            const maxPages = 10
+            for (let i = 0; i < maxPages; ++i) {
                 let tradesUrl = `https://api.binance.com/api/v3/historicalTrades?symbol=${symbol}&limit=1000`
                 if (fromId !== undefined) {
                     tradesUrl += `&fromId=${fromId}`
@@ -210,7 +211,7 @@ export async function requestAndStoreSnapshot<D extends DataStore<any>>({dataSto
                 } else {
                     throw Error(`Failed to fetch data for assets ${asset}: status: ` + trades.status)
                 }
-                const isLastAttempt = i === 4
+                const isLastAttempt = i === maxPages
                 if (!isLastAttempt) {
                     await new Promise((resolve) => setTimeout(resolve, 2000))
                 }
