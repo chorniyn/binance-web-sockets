@@ -4,17 +4,31 @@ import {DynamoDBDocumentClient, PutCommand} from "@aws-sdk/lib-dynamodb";
 import {DynamoDBClient} from "@aws-sdk/client-dynamodb";
 import {batchWriteOrFail} from "./batch-write";
 import {randomUUID} from "node:crypto";
+import {OrderBook} from "./OrderBook";
+import {Connection} from "mongoose";
+import { Trade } from "./Trade";
 
 
-export class DynamodbDataStore implements DataStore<{}>{
+export class DynamodbDataStore implements DataStore<{}> {
     randomId() {
         return randomUUID()
     }
+
     private readonly document: DynamoDBDocumentClient
+
     constructor(
         private readonly dynamodb: DynamoDBClient
     ) {
         this.document = DynamoDBDocumentClient.from(dynamodb)
+    }
+
+    async storeTrades(tradesToStore: Array<Trade>): Promise<void> {
+        await batchWriteOrFail({
+            items: tradesToStore,
+            tableName: "binance-trades",
+            operation: "store-trades",
+            dynamoDbClient: this.dynamodb
+        })
     }
 
     async storeTradeIndex(item: TradeIndexItem): Promise<void> {
@@ -25,6 +39,13 @@ export class DynamodbDataStore implements DataStore<{}>{
                 tradingPair: item.tradingPair,
                 transactionTime: item.time
             }
+        }))
+    }
+
+    async storeOrderBook(item: OrderBook): Promise<void> {
+        await this.document.send(new PutCommand({
+            TableName: "binance-order-book",
+            Item: item
         }))
     }
 

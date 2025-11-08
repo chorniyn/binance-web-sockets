@@ -276,8 +276,8 @@ export function subscribeToOptions({asset = 'BTC', localDates}: {
                             vega: element['v'] as number,// "v":"2.66584",              // vega
                             impliedVolatility: parseFloat(element['vo']) as number,// "vo":"0.10001",             // Implied volatility
                             markPrice: parseFloat(element['mp']) as number,// "mp":"2003.5102",           // Mark price
-                            buyMaxPrice: element['hl'] as number,// "hl":"2023.511",            // Buy Maximum price
-                            sellMinPrice: element['ll'] as number,// "ll":"1983.511",            // Sell Minimum price
+                            buyMaxPrice: parseFloat(element['hl']) as number,// "hl":"2023.511",            // Buy Maximum price
+                            sellMinPrice: parseFloat(element['ll']) as number,// "ll":"1983.511",            // Sell Minimum price
                             estimatedStrikePrice: element['eep'] as number// "eep":"0"                   // Estimated strike price (
                         }
                         return ticketItem

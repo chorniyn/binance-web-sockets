@@ -13,8 +13,8 @@ import {
 } from "@mui/material";
 import React from "react";
 
-const callsColumns = 4
-const putColumns = 4
+const callsColumns = 5
+const putColumns = 5
 
 function App() {
     const data = useBinanceOptionsStream()
@@ -33,11 +33,13 @@ function App() {
                             <TableRow>
                                 <TableCell>Delta</TableCell>
                                 <TableCell>Bid Size</TableCell>
-                                <TableCell>Bid / IV</TableCell>
+                                <TableCell>Best Buy Price / IV</TableCell>
+                                <TableCell>Buy Max Price</TableCell>
                                 <TableCell>Mark</TableCell>
                                 <TableCell>Strike</TableCell>
                                 <TableCell>Mark</TableCell>
-                                <TableCell>Ask / IV</TableCell>
+                                <TableCell>Best Sell Price / IV</TableCell>
+                                <TableCell>Min Cell Price</TableCell>
                                 <TableCell>Ask Size</TableCell>
                                 <TableCell>Delta</TableCell>
                             </TableRow>
@@ -78,6 +80,9 @@ const OptionsData = ({optionsData, indexPrice}: { optionsData?: OptionRow[], ind
                     {row.call?.bestBuyPrice?.toFixed(1)}<br/>
                     {((row.call?.buyImpliedVolatility ?? 0) * 100)?.toFixed(2)}%
                 </TableCell>
+                <TableCell>
+                    {row.call?.buyMaxPrice?.toFixed(2)}
+                </TableCell>
                 <TableCell>{row.call?.markPrice}</TableCell>
                 <TableCell>{row.strikePrice}</TableCell>
                 <TableCell>{row.put?.markPrice}</TableCell>
@@ -85,6 +90,9 @@ const OptionsData = ({optionsData, indexPrice}: { optionsData?: OptionRow[], ind
                     {row.put?.bestSellPrice?.toFixed(1)}<br/>
                     {((row.put?.sellImpliedVolatility ?? 0) * 100)?.toFixed(2)}%
                 </TableCell>
+            <TableCell>
+                {row.put?.sellMinPrice?.toFixed(2)}
+            </TableCell>
                 <TableCell>{row.put?.bestCellQuantity}</TableCell>
                 <TableCell>{row.put?.delta?.toFixed(5)}</TableCell>
             </TableRow>

@@ -10,7 +10,7 @@ buildSync({
     bundle: true,
     write: true,
     outfile: path.join(__dirname, "../index.js"),
-    external: ["@aws-sdk/*"],
+    external: ["@aws-sdk/*", "@aws-lambda-powertools/*"],
     minify: false,
 })
 
